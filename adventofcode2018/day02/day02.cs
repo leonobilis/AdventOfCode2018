@@ -10,12 +10,11 @@ namespace adventofcode2018
     public class Day02
     {
         public static int p1(IEnumerable<string> input) {
-            return input.Select(s => s.ToCharArray()
+            return input.SelectMany(s => s.ToCharArray()
                                       .GroupBy(i => i)
                                       .Select(x => x.Count())
                                       .Where(x => x >= 2  && x <= 3)
                                       .Distinct())
-                        .Aggregate((acc, x) => acc.Concat(x))
                         .GroupBy(i => i)
                         .Aggregate(1, (acc, x) => acc * x.Count());
         }
@@ -24,7 +23,6 @@ namespace adventofcode2018
 
             return input.Select(s1 => (s1, input.Where(s2 => s1.Where((c, i) => c != s2[i]).Count()==1)))
                         .Where(x => x.Item2.Any())
-                        .Take(1)
                         .Select(x => string.Concat(x.Item2.First().Where((c, i) => c == x.Item1[i])))
                         .First();
         }
