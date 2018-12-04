@@ -7,15 +7,11 @@ using System.Text.RegularExpressions;
 namespace adventofcode2018
 {
     using static Utils;
+
     public class Day04
     {
-        struct Guard 
-        {
-            public Guard(int id)
-            {
-                this.id = id;
-                this.asleep = null;
-            }
+        struct Guard
+        { 
             public int id;
             public List<int> asleep;
         }
@@ -23,25 +19,25 @@ namespace adventofcode2018
         static Guard MakeGuard(IGrouping<DateTime, (DateTime, string)> group)
         {
             Regex guardRx = new Regex(@"Guard #([\d]+) begins shift", RegexOptions.Compiled);
-    
-            var id = guardRx.IsMatch(group.First().Item2)?guardRx.Matches(group.First().Item2).Select(m => m.Groups).First()[1].Value:guardRx.Matches(group.Skip(1).First().Item2).Select(m => m.Groups).First()[1].Value;
-            var guard = new Guard(Int32.Parse(id));
-            guard.asleep = Enumerable.Zip(group.Where(x => x.Item2 == "falls asleep"), group.Where(x => x.Item2 == "wakes up"), (a, b) => (a.Item1, b.Item1))
-                                     .SelectMany(s => Enumerable.Range(s.Item1.Minute, s.Item2.Minute - s.Item1.Minute)).ToList();
-            
-            return guard;
+            return new Guard
+            {
+                id = Int32.Parse(guardRx.Matches(group.First().Item2).Select(m => m.Groups).First()[1].Value),
+                asleep = Enumerable.Zip(group.Where(x => x.Item2 == "falls asleep"), group.Where(x => x.Item2 == "wakes up"), (a, b) => (a.Item1, b.Item1))
+                                     .SelectMany(s => Enumerable.Range(s.Item1.Minute, s.Item2.Minute - s.Item1.Minute)).ToList()
+            };
         }
 
-        public static int p1(IEnumerable<string> input) {
+        public static int p1(IEnumerable<string> input)
+        {
             Regex inputRx = new Regex(@"\[([0-9\- \:]+)\] ([\w #]+)", RegexOptions.Compiled);
             return input.Select(s => inputRx.Matches(s).Select(m => m.Groups).First())
                               .Select(s => (DateTime.ParseExact(s[1].Value, "yyyy-MM-dd HH:mm", null), s[2].Value))
-                              .Select(s => s.Item1.Hour==23?(s.Item1 + new TimeSpan(0, 60 - s.Item1.Minute, 0), s.Item2):s)
                               .OrderBy(x => x.Item1)
+                              .Select(s => s.Item1.Hour==23?(s.Item1 + new TimeSpan(0, 60 - s.Item1.Minute, 0), s.Item2):s)
                               .GroupBy(x => x.Item1.Date)
                               .Select(s => MakeGuard(s))
                               .GroupBy(x => x.id)
-                              .Select(s => new {Key = s.Key, asleep = s.SelectMany(s2 => s2.asleep)})
+                              .Select(s => new { s.Key, asleep = s.SelectMany(s2 => s2.asleep) })
                               .OrderByDescending(o => o.asleep.Count())
                               .Take(1)
                               .Select(s => s.Key * s.asleep.GroupBy(g => g)
@@ -50,22 +46,23 @@ namespace adventofcode2018
                               .First();
         }
 
-        public static int p2(IEnumerable<string> input) {
+        public static int p2(IEnumerable<string> input)
+        {
             Regex inputRx = new Regex(@"\[([0-9\- \:]+)\] ([\w #]+)", RegexOptions.Compiled);
             return input.Select(s => inputRx.Matches(s).Select(m => m.Groups).First())
                               .Select(s => (DateTime.ParseExact(s[1].Value, "yyyy-MM-dd HH:mm", null), s[2].Value))
-                              .Select(s => s.Item1.Hour==23?(s.Item1 + new TimeSpan(0, 60 - s.Item1.Minute, 0), s.Item2):s)
                               .OrderBy(x => x.Item1)
+                              .Select(s => s.Item1.Hour==23?(s.Item1 + new TimeSpan(0, 60 - s.Item1.Minute, 0), s.Item2):s)
                               .GroupBy(x => x.Item1.Date)
                               .Select(s => MakeGuard(s))
                               .GroupBy(x => x.id)
-                              .Select(s => new {Key = s.Key, asleep = s.SelectMany(s2 => s2.asleep)
-                                                                       .GroupBy(g => g)
-                                                                       .Select(s2 => new {Minute = s2.Key, Count = s2.Count()})
-                                                                       .OrderByDescending(o => o.Count)
-                                                                       .Take(1)})
+                              .Select(s => new { s.Key, asleep = s.SelectMany(s2 => s2.asleep)
+                                                                  .GroupBy(g => g)
+                                                                  .Select(s2 => new {Minute = s2.Key, Count = s2.Count() })
+                                                                  .OrderByDescending(o => o.Count)
+                                                                  .Take(1) })
                               .Where(x => x.asleep.Count() > 0)
-                              .Select(s => new {Key = s.Key, asleep = s.asleep.First()})
+                              .Select(s => new { s.Key, asleep = s.asleep.First() })
                               .OrderByDescending(o => o.asleep.Count)
                               .Take(1)
                               .Select(s => s.Key * s.asleep.Minute)
