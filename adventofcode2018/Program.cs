@@ -13,6 +13,7 @@ namespace adventofcode2018
                 {2, () => Day02.Solution() },
                 {3, () => Day03.Solution() },
                 {4, () => Day04.Solution() },
+                {5, () => Day05.Solution() },
             };
 
             days[Int32.Parse(args[0])]();
