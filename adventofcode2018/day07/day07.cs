@@ -10,17 +10,6 @@ namespace adventofcode2018
 
     public static class Day07
     {
-        static HashSet<string> Process(string step, Dictionary<string, List<string>> steps, HashSet<string> toProcess)
-        {
-            foreach (var s in steps[step])
-            {
-                Process(s, steps, toProcess);
-            }   
-
-            toProcess.Add(step);
-
-            return toProcess;
-        }
         public static string p1(IEnumerable<string> input)
         {
 
@@ -60,45 +49,62 @@ namespace adventofcode2018
             return output.Aggregate("", (acc, s) => acc+s);
         }
 
-        public static int p2(IEnumerable<string> input)
+        public static int p2(IEnumerable<string> input, int numWorkers, Func<int, int, int> calcTime)
         {
 
             Regex inputRx = new Regex(@"Step ([A-Z]) must be finished before step ([A-Z]) can begin.", RegexOptions.Compiled);
-            var output = new HashSet<string>();
+            var output = new HashSet<char>();
             
             var steps = input.Select(s => inputRx.Matches(s).Select(m => m.Groups).First())
-                             .Select(s => (s[2].Value, s[1].Value))
+                             .Select(s => (s[2].Value[0], s[1].Value[0]))
                              .GroupBy(g => g.Item1)
                              .Select(s => new {s.Key, dependencies = s.Select(s2 => s2.Item2)
                                                                       .OrderBy(o => o)})
                              .ToDictionary(k => k.Key, v => v.dependencies.ToList());
 
             var steps2 = input.Select(s => inputRx.Matches(s).Select(m => m.Groups).First())
-                                .Select(s => (s[1].Value, s[2].Value))
+                                .Select(s => (s[1].Value[0], s[2].Value[0]))
                                 .GroupBy(g => g.Item1)
                                 .Select(s => new {s.Key, Values = s.Select(s2 => steps[s2.Item2])})
                                 .ToDictionary(k => k.Key, v => v.Values.ToList());
             
-            steps = steps.Concat(steps2.Where(x => !steps.ContainsKey(x.Key)).ToDictionary(k => k.Key, v => new List<string>()))
+            steps = steps.Concat(steps2.Where(x => !steps.ContainsKey(x.Key)).ToDictionary(k => k.Key, v => new List<char>()))
                  .OrderBy(o => o.Key)
                  .ToDictionary(k => k.Key, v => v.Value);
 
-            var workers = Enumerable.Range(0,5).Select(s => new {wait = 0, letter = ""}).ToList();
+            var workers = Enumerable.Range(0, numWorkers).Select(s => new {wait = 0, letter = '\0'});
+            var time = 0;
 
             while (steps.Count > 0)
             {
-                var key = steps.Where(x => x.Value.Count == 0).First().Key;
-                if (steps2.ContainsKey(key))
-                    foreach(var step2 in steps2[key])
+                var toProcess = workers.Where(x => x.wait == 0).Zip(steps.Where(x => x.Value.Count == 0), (worker, step) => (worker, step)).ToList();
+
+                if (toProcess.Count() == 0)
+                {
+                    time = workers.Where(x => x.wait > 0).Select(s => s.wait).Min();
+                    foreach (var worker in workers.Where(x => x.wait == time).ToList())
                     {
-                        step2.Remove(key);
+                        var key = worker.letter;
+                        if (steps2.ContainsKey(key))
+                            foreach (var step2 in steps2[key])
+                            {
+                                step2.Remove(key);
+                            }
                     }
-                output.Add(key);
-                steps.Remove(key);
-                    
+                    workers = workers.Where(x => x.wait > time);
+                }
+                else
+                {   
+                    foreach (var key in toProcess.Select(s => s.Item2.Key))
+                    {
+                        steps.Remove(key);
+                    }
+                    workers = workers.Where(x => x.wait > 0).Concat(toProcess.Select(p => new { wait = calcTime(time, p.Item2.Key), letter = p.Item2.Key }));
+                }
+                workers = workers.Concat(Enumerable.Range(0, numWorkers - workers.Count()).Select(s => new { wait = 0, letter = '\0' })).ToList();
             }
 
-            return output.Aggregate("", (acc, s) => acc+s).Count();
+            return workers.First().wait;
         }
 
         public static void Solution()
@@ -110,11 +116,11 @@ Step A must be finished before step D can begin.
 Step B must be finished before step E can begin.
 Step D must be finished before step E can begin.
 Step F must be finished before step E can begin.".Split("\n");
-            Console.WriteLine(Day07.p1(testInput));
-//             Console.WriteLine(Day07.p2(testInput, 32));
+            // Console.WriteLine(Day07.p1(testInput));
+            // Console.WriteLine(Day07.p2(testInput, 2, (time, letter) => time + letter - 64));
 
             var input = GetFromFile(7);
-            Print(p1(input), p2(input));
+            Print(p1(input), p2(input, 5, (time, letter) => time + letter - 4));
         }
     }
 }
