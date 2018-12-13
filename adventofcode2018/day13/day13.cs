@@ -1,9 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.RegularExpressions;
-using System.IO;
 
 namespace adventofcode2018
 {
@@ -92,6 +89,11 @@ namespace adventofcode2018
             else
                 direction = changeDirection.GetValueOrDefault((path, direction), direction);  
         }
+
+        public bool IsPotencialCrash(Cart other)
+        {
+            return this.PotentialMove().Item1 == other.position.Item1 && this.PotentialMove().Item2 == other.position.Item2;
+        }
     }
 
     public static class Day13
@@ -121,11 +123,8 @@ namespace adventofcode2018
                 carts.ForEach( c => c.Move() );
                 carts.ForEach( c => c.CheckPath(map[c.position]) );
                 var potential_crash = carts.SelectMany((s, i) => positions.Where((x, i2)  => i != i2 & x.Item1 == s.position.Item1 && x.Item2 == s.position.Item2));
-                // if (potential_crash.Any())
-                //     {}
                 crash = potential_crash.Any() ? potential_crash.First() : crash; 
             }
-
             return crash;
         }
 
@@ -142,32 +141,23 @@ namespace adventofcode2018
 
             while(carts.Count != 1)
             {
-                if(carts.Count < 3)
-                {}
-                var positions = carts.Select(s => s.position).ToList();
-                // var toRemove = new HashSet<Cart>();
-                // foreach(var c in carts)
-                // {
-                //     //c.Move();
-                //     var potential_crash = carts.Where((x => x != c && x.position.Item1 == c.PotentialMove().Item1 && x.position.Item2 == c.PotentialMove().Item2));
-                //     if (potential_crash.Count() > 0)
-                //     {
-                //         toRemove.Add(c);
-                //         toRemove.Add(potential_crash.First());
-                //     }
-                // }
-                // toRemove.ToList().ForEach( c => carts.Remove(c));
-                var potential_crash = carts.SelectMany((s, i) => carts.Where((x, i2)  => i != i2 && x.position.Item1 == s.position.Item1 && x.position.Item2 == s.position.Item2)).Distinct().ToList();
-                if (potential_crash.Count > 0)
-                {}
-
-                potential_crash.ForEach( c => carts.Remove(c));
-                carts.ForEach( c => c.Move() );
-                carts.ForEach( c => c.CheckPath(map[c.position]) );
-                
-                potential_crash = carts.SelectMany((s, i) => carts.Where((x, i2)  => i != i2 && x.PotentialMove().Item1 == s.position.Item1 && x.PotentialMove().Item2 == s.position.Item2
-                                                                                                 && s.PotentialMove().Item1 == x.position.Item1 && s.PotentialMove().Item2 == x.position.Item2)).Distinct().ToList();
-                potential_crash.ForEach( c => carts.Remove(c));
+                carts = carts.OrderBy(c => (c.position.Item2, c.position.Item1)).ToList();
+                 var toRemove = new HashSet<Cart>();
+                 foreach(var c in carts)
+                 {
+                    var potential_crash_inner = carts.Where((x => x != c && c.IsPotencialCrash(x)));
+                    if (potential_crash_inner.Any())
+                    {
+                        toRemove.Add(c);
+                        toRemove.Add(potential_crash_inner.First());
+                    }
+                    else
+                    {
+                        c.Move();
+                        c.CheckPath(map[c.position]);
+                    }
+                }
+                toRemove.ToList().ForEach( c => carts.Remove(c));
             }
 
             return carts.First().position;
@@ -178,8 +168,8 @@ namespace adventofcode2018
             // var testInput = File.ReadAllLines("adventofcode2018/day13/test_input.txt");
             // Console.WriteLine(FirstCrash(testInput));
 
-            var testInput2 = File.ReadAllLines("adventofcode2018/day13/test_input2.txt");
-            //Console.WriteLine(LastCart(testInput2));
+            // var testInput2 = File.ReadAllLines("adventofcode2018/day13/test_input2.txt");
+            // Console.WriteLine(LastCart(testInput2));
 
             var input = GetFromFile(13);
             Print(FirstCrash(input), LastCart(input));
