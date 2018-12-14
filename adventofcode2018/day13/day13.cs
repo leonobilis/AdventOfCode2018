@@ -122,7 +122,7 @@ namespace adventofcode2018
                 var positions = carts.Select(s => s.position).ToList();
                 carts.ForEach( c => c.Move() );
                 carts.ForEach( c => c.CheckPath(map[c.position]) );
-                var potential_crash = carts.SelectMany((s, i) => positions.Where((x, i2)  => i != i2 & x.Item1 == s.position.Item1 && x.Item2 == s.position.Item2));
+                var potential_crash = carts.SelectMany((s, i) => positions.Where((x, i2)  => i != i2 && x.Item1 == s.position.Item1 && x.Item2 == s.position.Item2));
                 crash = potential_crash.Any() ? potential_crash.First() : crash; 
             }
             return crash;
