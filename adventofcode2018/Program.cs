@@ -25,6 +25,7 @@ namespace adventofcode2018
                 {14, Day14.Solution },
                 {15, Day15.Solution },
                 {16, Day16.Solution },
+                {17, Day17.Solution },
             };
 
             days[Int32.Parse(args[0])]();
